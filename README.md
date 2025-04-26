@@ -1,4 +1,4 @@
-#yt-dlpGUI
+# yt-dlpGUI
 
 A GUI front end for yt-dlp written in Swift 6 for macOS Apple Silicon 
 
