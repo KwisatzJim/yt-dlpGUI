@@ -10,7 +10,7 @@ can download video and merge with the chosen audio file or download audio only a
 
 also works with playlists.
 
-to use:
+### to use:
 
 open yt-dlpGUI.app
 
@@ -26,8 +26,15 @@ click the Brows button to set the download location.  This will be remembered an
 
 click on Download Video for video and Download MP3 for music.
 
-To build it:
-1: git clone https://github.com/KwisatzJim/yt-dlpGUI
-2: cd yt-dlpGUI
-3: open yt-dlpGUI.xcodeproj in Xcode
-4: click Product - > Build
+### To build it:
+```
+git clone https://github.com/KwisatzJim/yt-dlpGUI
+```
+
+```
+cd yt-dlpGUI
+```
+
+open yt-dlpGUI.xcodeproj in Xcode
+
+click Product - > Build
