@@ -1,3 +1,5 @@
+#yt-dlpGUI
+
 A GUI front end for yt-dlp written in Swift 6 for macOS Apple Silicon 
 
 DISCLAIMER: I'm not a programmer! But I'm trying to learn to program. I created this as a project to learn Swift
