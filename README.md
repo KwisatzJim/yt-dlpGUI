@@ -1,5 +1,7 @@
 A GUI front end for yt-dlp written in Swift 6 for macOS Apple Silicon 
 
+DISCLAIMER: I'm not a programmer! But I'm trying to learn to program. I created this as a project to learn Swift
+
 yt-dlp and ffmpeg are bundled.  
 
 can download video and merge with the chosen audio file or download audio only as mp3.
