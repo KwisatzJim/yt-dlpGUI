@@ -42,7 +42,7 @@ struct ContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("yt-dlp Frontend")
+                Text("yt-dlpGUI")
                     .font(.title)
                 Spacer()
                 Button("Settings") {
