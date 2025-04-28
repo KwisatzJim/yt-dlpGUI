@@ -329,8 +329,8 @@ struct ContentView: View {
                             self.lastLogLine = output
                             
                             // Parse progress percentage
-                            if let progressRange = output.range(of: "[download]\\s+([0-9.]+)%", options: .regularExpression) {
-                                let progressString = output[progressRange].replacingOccurrences(of: "[download] ", with: "").replacingOccurrences(of: "%", with: "")
+                            if let progressRange = output.range(of: "\\d+\\.\\d+%", options: .regularExpression) {
+                                let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
                                     self.downloadProgress = progress / 100.0
                                 }
@@ -414,8 +414,8 @@ struct ContentView: View {
                             self.lastLogLine = output
                             
                             // Parse progress percentage
-                            if let progressRange = output.range(of: "[download]\\s+([0-9.]+)%", options: .regularExpression) {
-                                let progressString = output[progressRange].replacingOccurrences(of: "[download] ", with: "").replacingOccurrences(of: "%", with: "")
+                            if let progressRange = output.range(of: "\\d+\\.\\d+%", options: .regularExpression) {
+                                let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
                                     self.downloadProgress = progress / 100.0
                                 }
