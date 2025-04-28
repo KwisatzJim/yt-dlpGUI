@@ -1,10 +1,8 @@
-//
 //  ContentView.swift
 //  yt-dlpGUI
 //
 //  Created by Jim Kelley on 4/16/25.
 //
-
 import SwiftUI
 
 struct FormatOption: Identifiable, Hashable {
@@ -12,11 +10,11 @@ struct FormatOption: Identifiable, Hashable {
     let description: String
     let isAudio: Bool
 }
-
 struct ContentView: View {
     @AppStorage("lastVideoFormat") private var lastVideoFormat: String = ""
     @AppStorage("lastAudioFormat") private var lastAudioFormat: String = ""
-    @AppStorage("defaultDownloadFolder") private var defaultDownloadFolder: String = ""
+    @AppStorage("defaultDownloadFolder") private var defaultDownloadFolder:
+        String = ""
     @State private var videoURL: String = ""
     @State private var outputFolder: URL? = nil
     @State private var logOutput: String = ""
@@ -42,7 +40,8 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var scrollViewProxy: ScrollViewProxy? = nil
     @State private var lastLogLine: String = ""
-
+    @State private var outputUpdateTimer: Timer?
+    @State private var outputBuffer: String = ""
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -57,9 +56,11 @@ struct ContentView: View {
             HStack {
                 TextField("Video URL", text: $videoURL)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                
+
                 Button("Paste") {
-                    if let clipboardString = NSPasteboard.general.string(forType: .string) {
+                    if let clipboardString = NSPasteboard.general.string(
+                        forType: .string
+                    ) {
                         videoURL = clipboardString
                     }
                 }
@@ -80,18 +81,26 @@ struct ContentView: View {
                 Button("Fetch Formats") {
                     fetchAvailableFormats()
                 }
-                .disabled(videoURL.isEmpty || isFetchingFormats || isDownloading)
+                .disabled(
+                    videoURL.isEmpty || isFetchingFormats || isDownloading
+                )
 
                 Button("Download Video") {
                     startDownloadVideo()
                 }
-                .disabled(videoURL.isEmpty || outputFolder == nil || selectedVideoFormat == nil || selectedAudioFormat == nil || isDownloading)
+                .disabled(
+                    videoURL.isEmpty || outputFolder == nil
+                        || selectedVideoFormat == nil
+                        || selectedAudioFormat == nil || isDownloading
+                )
 
                 Button("Download MP3") {
                     startDownloadMP3()
                 }
-                .disabled(videoURL.isEmpty || outputFolder == nil || isDownloading)
-                
+                .disabled(
+                    videoURL.isEmpty || outputFolder == nil || isDownloading
+                )
+
                 if isDownloading || isFetchingFormats {
                     ProgressView()
                         .scaleEffect(0.7)
@@ -103,8 +112,11 @@ struct ContentView: View {
                     Text("Select Video Format")
                         .bold()
                     Picker("Video Format", selection: $selectedVideoFormat) {
-                        ForEach(availableFormats.filter { !$0.isAudio }) { format in
-                            Text("\(format.id): \(format.description)").tag(Optional(format))
+                        ForEach(availableFormats.filter { !$0.isAudio }) {
+                            format in
+                            Text("\(format.id): \(format.description)").tag(
+                                Optional(format)
+                            )
                         }
                     }
                 }
@@ -113,13 +125,16 @@ struct ContentView: View {
                     Text("Select Audio Format")
                         .bold()
                     Picker("Audio Format", selection: $selectedAudioFormat) {
-                        ForEach(availableFormats.filter { $0.isAudio }) { format in
-                            Text("\(format.id): \(format.description)").tag(Optional(format))
+                        ForEach(availableFormats.filter { $0.isAudio }) {
+                            format in
+                            Text("\(format.id): \(format.description)").tag(
+                                Optional(format)
+                            )
                         }
                     }
                 }
             }
-            
+
             if isDownloading {
                 ProgressView(value: downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
@@ -141,7 +156,7 @@ struct ContentView: View {
                     scrollViewProxy = proxy
                 }
             }
-            
+
             if let errorMessage = errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
@@ -151,12 +166,16 @@ struct ContentView: View {
         .padding()
         .frame(width: 700)
         .sheet(isPresented: $showingSettings) {
-            SettingsView(defaultFolderPath: $defaultDownloadFolder, isPresented: $showingSettings)
+            SettingsView(
+                defaultFolderPath: $defaultDownloadFolder,
+                isPresented: $showingSettings
+            )
         }
         .onAppear {
             if !defaultDownloadFolder.isEmpty,
-               let savedPath = URL(string: defaultDownloadFolder),
-               FileManager.default.fileExists(atPath: savedPath.path) {
+                let savedPath = URL(string: defaultDownloadFolder),
+                FileManager.default.fileExists(atPath: savedPath.path)
+            {
                 outputFolder = savedPath
             }
         }
@@ -175,7 +194,7 @@ struct ContentView: View {
         panel.allowsMultipleSelection = false
         panel.prompt = "Select Download Folder"
         panel.message = "Choose the folder where downloaded files will be saved"
-        
+
         if panel.runModal() == .OK {
             outputFolder = panel.url
             if let url = panel.url {
@@ -197,12 +216,12 @@ struct ContentView: View {
             errorMessage = "yt-dlp not found in bundle."
             return
         }
-        
+
         guard !videoURL.isEmpty else {
             errorMessage = "Please enter a video URL"
             return
         }
-        
+
         errorMessage = nil
         isFetchingFormats = true
         logOutput = "Fetching formats...\n"
@@ -227,53 +246,64 @@ struct ContentView: View {
 
                 DispatchQueue.main.async {
                     self.logOutput += output
-                    
-                    if output.lowercased().contains("error") || process.terminationStatus != 0 {
-                        self.errorMessage = "Failed to fetch formats. Please check the URL and your internet connection."
+
+                    if output.lowercased().contains("error")
+                        || process.terminationStatus != 0
+                    {
+                        self.errorMessage =
+                            "Failed to fetch formats. Please check the URL and your internet connection."
                         self.isFetchingFormats = false
                         return
                     }
-                    
+
                     let formats = parseFormats(from: output)
-                    
+
                     if formats.isEmpty {
-                        self.errorMessage = "No formats found. The URL may be invalid or not supported."
+                        self.errorMessage =
+                            "No formats found. The URL may be invalid or not supported."
                         self.isFetchingFormats = false
                         return
                     }
-                    
+
                     self.availableFormats = formats
-                    
+
                     // Try to find previously selected formats or default to best options
                     let videoFormats = formats.filter { !$0.isAudio }
                     let audioFormats = formats.filter { $0.isAudio }
-                    
+
                     // For video, try to find previous format or select a good default (usually 1080p or 720p)
-                    if let savedFormat = videoFormats.first(where: { $0.id == lastVideoFormat }) {
+                    if let savedFormat = videoFormats.first(where: {
+                        $0.id == lastVideoFormat
+                    }) {
                         self.selectedVideoFormat = savedFormat
                     } else {
                         // Look for 1080p or similar good quality format
                         let preferredFormat = videoFormats.first {
-                            $0.description.contains("1080") ||
-                            $0.description.contains("720")
+                            $0.description.contains("1080")
+                                || $0.description.contains("720")
                         }
-                        self.selectedVideoFormat = preferredFormat ?? videoFormats.first
+                        self.selectedVideoFormat =
+                            preferredFormat ?? videoFormats.first
                     }
-                    
+
                     // For audio, try to find previous format or select a good default (usually highest bitrate)
-                    if let savedFormat = audioFormats.first(where: { $0.id == lastAudioFormat }) {
+                    if let savedFormat = audioFormats.first(where: {
+                        $0.id == lastAudioFormat
+                    }) {
                         self.selectedAudioFormat = savedFormat
                     } else {
                         // Try to find the best audio format
                         self.selectedAudioFormat = audioFormats.first
                     }
-                    
+
                     self.isFetchingFormats = false
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self.logOutput += "\n❌ Failed to fetch formats: \(error.localizedDescription)"
-                    self.errorMessage = "Failed to execute yt-dlp: \(error.localizedDescription)"
+                    self.logOutput +=
+                        "\n❌ Failed to fetch formats: \(error.localizedDescription)"
+                    self.errorMessage =
+                        "Failed to execute yt-dlp: \(error.localizedDescription)"
                     self.isFetchingFormats = false
                 }
             }
@@ -281,16 +311,20 @@ struct ContentView: View {
     }
 
     func startDownloadVideo() {
-        guard let outputFolder = outputFolder, let selectedVideoFormat = selectedVideoFormat, let selectedAudioFormat = selectedAudioFormat else {
+        guard let outputFolder = outputFolder,
+            let selectedVideoFormat = selectedVideoFormat,
+            let selectedAudioFormat = selectedAudioFormat
+        else {
             errorMessage = "Please select output folder and formats"
             return
         }
-        
-        guard let ytDlpPath = pathToYTDLP(), let ffmpegPath = pathToFFmpeg() else {
+
+        guard let ytDlpPath = pathToYTDLP(), let ffmpegPath = pathToFFmpeg()
+        else {
             errorMessage = "yt-dlp or ffmpeg not found in bundle."
             return
         }
-        
+
         guard !videoURL.isEmpty else {
             errorMessage = "Please enter a video URL"
             return
@@ -313,52 +347,111 @@ struct ContentView: View {
             "-f", "\(selectedVideoFormat.id)+\(selectedAudioFormat.id)",
             "--merge-output-format", "mp4",
             "-o", "%(title)s.%(ext)s",
-            videoURL
+            videoURL,
         ]
 
         let fileHandle = pipe.fileHandleForReading
 
+        // Create a dedicated queue for processing output
+        let outputQueue = DispatchQueue(
+            label: "com.yourdomain.ytdlpgui.output",
+            qos: .utility
+        )
+
+        // Set up a timer to periodically update the UI from the buffer
+        outputUpdateTimer?.invalidate()
+        outputBuffer = ""
+        outputUpdateTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.2,
+            repeats: true
+        ) { _ in
+            DispatchQueue.main.async {
+                if !self.outputBuffer.isEmpty {
+                    self.logOutput += self.outputBuffer
+                    self.outputBuffer = ""
+                    // Trigger scrolling
+                    DispatchQueue.main.async {
+                        self.scrollViewProxy?.scrollTo(
+                            "logEnd",
+                            anchor: .bottom
+                        )
+                    }
+                }
+            }
+        }
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 try process.run()
-                
+
                 fileHandle.readabilityHandler = { handle in
                     let availableData = handle.availableData
-                    if !availableData.isEmpty, let output = String(data: availableData, encoding: .utf8) {
-                        DispatchQueue.main.async {
-                            self.logOutput += output
-                            self.lastLogLine = output
-                            
+                    if availableData.isEmpty {
+                        return  // Exit if no data (EOF)
+                    }
+
+                    if let output = String(data: availableData, encoding: .utf8)
+                    {
+                        // Process on background queue
+                        outputQueue.async {
                             // Parse progress percentage
-                            if let progressRange = output.range(of: "\\d+\\.\\d+%", options: .regularExpression) {
-                                let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
+                            if let progressRange = output.range(
+                                of: "\\d+\\.\\d+%",
+                                options: .regularExpression
+                            ) {
+                                let progressString = output[progressRange]
+                                    .replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
-                                    self.downloadProgress = progress / 100.0
-                                    print("Progress updated: \(progress)%")  // Debug print
+                                    DispatchQueue.main.async {
+                                        self.downloadProgress = progress / 100.0
+                                        print("Progress updated: \(progress)%")  // Debug print
+                                    }
                                 }
                             }
+
+                            // Add to buffer instead of directly to UI
+                            self.outputBuffer += output
                         }
                     }
                 }
 
                 process.waitUntilExit()
-                
+
+                // Clean up properly
                 DispatchQueue.main.async {
+                    // Final update with any remaining buffer
+                    if !self.outputBuffer.isEmpty {
+                        self.logOutput += self.outputBuffer
+                        self.outputBuffer = ""
+                    }
+
                     fileHandle.readabilityHandler = nil
+                    self.outputUpdateTimer?.invalidate()
+                    self.outputUpdateTimer = nil
+
                     if process.terminationStatus == 0 {
-                        self.logOutput += "\n✅ Video download completed successfully."
+                        self.logOutput +=
+                            "\n✅ Video download completed successfully."
                         self.downloadProgress = 1.0
                     } else {
-                        self.logOutput += "\n❌ Download failed with exit code: \(process.terminationStatus)"
-                        self.errorMessage = "Download failed. Check log for details."
+                        self.logOutput +=
+                            "\n❌ Download failed with exit code: \(process.terminationStatus)"
+                        self.errorMessage =
+                            "Download failed. Check log for details."
                     }
                     self.isDownloading = false
                 }
 
             } catch {
                 DispatchQueue.main.async {
-                    self.logOutput += "\n❌ Failed to run yt-dlp: \(error.localizedDescription)"
-                    self.errorMessage = "Failed to execute yt-dlp: \(error.localizedDescription)"
+                    fileHandle.readabilityHandler = nil
+                    self.outputUpdateTimer?.invalidate()
+                    self.outputUpdateTimer = nil
+
+                    self.logOutput +=
+                        "\n❌ Failed to run yt-dlp: \(error.localizedDescription)"
+                    self.errorMessage =
+                        "Failed to execute yt-dlp: \(error.localizedDescription)"
                     self.isDownloading = false
                 }
             }
@@ -370,17 +463,18 @@ struct ContentView: View {
             errorMessage = "Please select output folder"
             return
         }
-        
-        guard let ytDlpPath = pathToYTDLP(), let ffmpegPath = pathToFFmpeg() else {
+
+        guard let ytDlpPath = pathToYTDLP(), let ffmpegPath = pathToFFmpeg()
+        else {
             errorMessage = "yt-dlp or ffmpeg not found in bundle."
             return
         }
-        
+
         guard !videoURL.isEmpty else {
             errorMessage = "Please enter a video URL"
             return
         }
-        
+
         isDownloading = true
         downloadProgress = 0.0
         errorMessage = nil
@@ -397,56 +491,113 @@ struct ContentView: View {
             "--ffmpeg-location", ffmpegPath,
             "-x",
             "--audio-format", "mp3",
-            "--audio-quality", "0", // Best quality
+            "--audio-quality", "0",  // Best quality
             "-o", "%(title)s.%(ext)s",
-            videoURL
+            videoURL,
         ]
 
         let fileHandle = pipe.fileHandleForReading
 
+        // Create a dedicated queue for processing output
+        let outputQueue = DispatchQueue(
+            label: "com.yourdomain.ytdlpgui.output.mp3",
+            qos: .utility
+        )
+
+        // Set up a timer to periodically update the UI from the buffer
+        outputUpdateTimer?.invalidate()
+        outputBuffer = ""
+        outputUpdateTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.2,
+            repeats: true
+        ) { _ in
+            DispatchQueue.main.async {
+                if !self.outputBuffer.isEmpty {
+                    self.logOutput += self.outputBuffer
+                    self.outputBuffer = ""
+                    // Trigger scrolling
+                    DispatchQueue.main.async {
+                        self.scrollViewProxy?.scrollTo(
+                            "logEnd",
+                            anchor: .bottom
+                        )
+                    }
+                }
+            }
+        }
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 try process.run()
-                
+
                 fileHandle.readabilityHandler = { handle in
                     let availableData = handle.availableData
-                    if !availableData.isEmpty, let output = String(data: availableData, encoding: .utf8) {
-                        DispatchQueue.main.async {
-                            // Parse progress percentage first
-                            if let progressRange = output.range(of: "\\d+\\.\\d+%", options: .regularExpression) {
-                                let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
+                    if availableData.isEmpty {
+                        return  // Exit if no data (EOF)
+                    }
+
+                    if let output = String(data: availableData, encoding: .utf8)
+                    {
+                        // Process on background queue
+                        outputQueue.async {
+                            // Parse progress percentage
+                            if let progressRange = output.range(
+                                of: "\\d+\\.\\d+%",
+                                options: .regularExpression
+                            ) {
+                                let progressString = output[progressRange]
+                                    .replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
-                                    self.downloadProgress = progress / 100.0
-                                    print("Progress updated: \(progress)%")  // Debug print
+                                    DispatchQueue.main.async {
+                                        self.downloadProgress = progress / 100.0
+                                        print("Progress updated: \(progress)%")  // Debug print
+                                    }
                                 }
                             }
-                            
-                            // Throttle log updates by using a small delay
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.logOutput += output
-                            }
+
+                            // Add to buffer instead of directly to UI
+                            self.outputBuffer += output
                         }
                     }
                 }
 
                 process.waitUntilExit()
-                
+
+                // Clean up properly
                 DispatchQueue.main.async {
+                    // Final update with any remaining buffer
+                    if !self.outputBuffer.isEmpty {
+                        self.logOutput += self.outputBuffer
+                        self.outputBuffer = ""
+                    }
+
                     fileHandle.readabilityHandler = nil
+                    self.outputUpdateTimer?.invalidate()
+                    self.outputUpdateTimer = nil
+
                     if process.terminationStatus == 0 {
-                        self.logOutput += "\n✅ MP3 download completed successfully."
+                        self.logOutput +=
+                            "\n✅ MP3 download completed successfully."
                         self.downloadProgress = 1.0
                     } else {
-                        self.logOutput += "\n❌ Download failed with exit code: \(process.terminationStatus)"
-                        self.errorMessage = "Download failed. Check log for details."
+                        self.logOutput +=
+                            "\n❌ Download failed with exit code: \(process.terminationStatus)"
+                        self.errorMessage =
+                            "Download failed. Check log for details."
                     }
                     self.isDownloading = false
                 }
 
             } catch {
                 DispatchQueue.main.async {
-                    self.logOutput += "\n❌ Failed to run yt-dlp: \(error.localizedDescription)"
-                    self.errorMessage = "Failed to execute yt-dlp: \(error.localizedDescription)"
+                    fileHandle.readabilityHandler = nil
+                    self.outputUpdateTimer?.invalidate()
+                    self.outputUpdateTimer = nil
+
+                    self.logOutput +=
+                        "\n❌ Failed to run yt-dlp: \(error.localizedDescription)"
+                    self.errorMessage =
+                        "Failed to execute yt-dlp: \(error.localizedDescription)"
                     self.isDownloading = false
                 }
             }
@@ -459,40 +610,54 @@ struct ContentView: View {
 
         do {
             let regex = try NSRegularExpression(pattern: "^\\s*(\\d+)\\s+(.+)$")
-            
+
             for line in lines {
-                if let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) {
+                if let match = regex.firstMatch(
+                    in: line,
+                    range: NSRange(line.startIndex..., in: line)
+                ) {
                     if match.numberOfRanges >= 3,
-                       let idRange = Range(match.range(at: 1), in: line),
-                       let descriptionRange = Range(match.range(at: 2), in: line) {
-                        
+                        let idRange = Range(match.range(at: 1), in: line),
+                        let descriptionRange = Range(
+                            match.range(at: 2),
+                            in: line
+                        )
+                    {
+
                         let id = String(line[idRange])
-                        let description = String(line[descriptionRange]).trimmingCharacters(in: .whitespaces)
-                        
+                        let description = String(line[descriptionRange])
+                            .trimmingCharacters(in: .whitespaces)
+
                         // Improved audio detection
-                        let isAudio = description.lowercased().contains("audio only") ||
-                                     (description.lowercased().contains("audio") &&
-                                      !description.lowercased().contains("video"))
-                        
-                        formats.append(FormatOption(id: id, description: description, isAudio: isAudio))
+                        let isAudio =
+                            description.lowercased().contains("audio only")
+                            || (description.lowercased().contains("audio")
+                                && !description.lowercased().contains("video"))
+
+                        formats.append(
+                            FormatOption(
+                                id: id,
+                                description: description,
+                                isAudio: isAudio
+                            )
+                        )
                     }
                 }
             }
         } catch {
             DispatchQueue.main.async {
-                errorMessage = "Error parsing formats: \(error.localizedDescription)"
+                errorMessage =
+                    "Error parsing formats: \(error.localizedDescription)"
             }
         }
 
         return formats
     }
 }
-
 struct SettingsView: View {
     @Binding var defaultFolderPath: String
     @Binding var isPresented: Bool
     @State private var folderPathDisplay: String = "Not set"
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -511,7 +676,7 @@ struct SettingsView: View {
                     selectFolder()
                 }
             }
-            
+
             Text(folderPathDisplay)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -526,23 +691,25 @@ struct SettingsView: View {
             updateFolderDisplay()
         }
     }
-    
+
     func selectFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         panel.prompt = "Select Default Download Folder"
-        panel.message = "Choose the default folder where downloaded files will be saved"
-        
+        panel.message =
+            "Choose the default folder where downloaded files will be saved"
+
         if panel.runModal() == .OK, let url = panel.url {
             defaultFolderPath = url.absoluteString
             updateFolderDisplay()
         }
     }
-    
+
     func updateFolderDisplay() {
-        if let url = URL(string: defaultFolderPath), !defaultFolderPath.isEmpty {
+        if let url = URL(string: defaultFolderPath), !defaultFolderPath.isEmpty
+        {
             folderPathDisplay = url.path
         } else {
             folderPathDisplay = "Not set"
