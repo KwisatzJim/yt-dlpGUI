@@ -123,6 +123,7 @@ struct ContentView: View {
             if isDownloading {
                 ProgressView(value: downloadProgress)
                     .progressViewStyle(LinearProgressViewStyle())
+                    .frame(height: 10)  // Make sure it has enough height
             }
 
             ScrollViewReader { proxy in
@@ -160,8 +161,8 @@ struct ContentView: View {
             }
         }
         .onChange(of: logOutput) {
-            // Scroll to bottom when log updates
-            DispatchQueue.main.async {
+            // Use a small delay to prevent multiple updates per frame
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 scrollViewProxy?.scrollTo("logEnd", anchor: .bottom)
             }
         }
@@ -333,6 +334,7 @@ struct ContentView: View {
                                 let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
                                     self.downloadProgress = progress / 100.0
+                                    print("Progress updated: \(progress)%")  // Debug print
                                 }
                             }
                         }
@@ -410,15 +412,18 @@ struct ContentView: View {
                     let availableData = handle.availableData
                     if !availableData.isEmpty, let output = String(data: availableData, encoding: .utf8) {
                         DispatchQueue.main.async {
-                            self.logOutput += output
-                            self.lastLogLine = output
-                            
-                            // Parse progress percentage
+                            // Parse progress percentage first
                             if let progressRange = output.range(of: "\\d+\\.\\d+%", options: .regularExpression) {
                                 let progressString = output[progressRange].replacingOccurrences(of: "%", with: "")
                                 if let progress = Double(progressString) {
                                     self.downloadProgress = progress / 100.0
+                                    print("Progress updated: \(progress)%")  // Debug print
                                 }
+                            }
+                            
+                            // Throttle log updates by using a small delay
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.logOutput += output
                             }
                         }
                     }
