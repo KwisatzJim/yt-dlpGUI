@@ -1,41 +1,49 @@
 # yt-dlpGUI
 
-A GUI front end for yt-dlp written in Swift 6 for macOS Apple Silicon 
+A GUI front end for yt-dlp written in Swift 6 for macOS 
 
 DISCLAIMER: I'm not a programmer! But I'm trying to learn to program. I created this as a project to learn Swift
 
-yt-dlp and ffmpeg are bundled.  
+yt-dlp and ffmpeg are no longer bundled.  The app will check for dependencies. If homebrew isn't installed it will install it. If ffmpeg and/or yt-dlp aren't installed it will install them with homebrew.
 
-can download video and merge with the chosen audio file or download audio only as mp3.
+Can download video and merge with the chosen audio file or download audio only as mp3.
 
-also works with playlists.
+Also works with playlists.
 
 ### to use:
 
 open yt-dlpGUI.app
-![1 main window](https://github.com/user-attachments/assets/61fe1edf-f495-4d0c-9090-fe7db3afadf7)
+![01 opening screen](https://github.com/user-attachments/assets/86e07cfc-d8c1-4f5d-bb46-28633d426a89)
+
 
 
 paste a youtube or invidious URL into the Video URL field
-![2 paste url](https://github.com/user-attachments/assets/dcc1252a-c080-44ba-9724-1a504b6986c8)
+![02 pasted url](https://github.com/user-attachments/assets/be3ed786-66e2-4fe3-9ac5-2b1ba8d7dfaf)
+
 
 
 click on "Fetch Formats"
-![3 fetch formats](https://github.com/user-attachments/assets/bd386042-4cba-478c-93d0-ef438636972a)
+![03 fetched formats](https://github.com/user-attachments/assets/480e3713-65d6-4685-8900-904685e17e4b)
+
 
 
 choose the desired Video format in the drop down menu
-![4 choose video](https://github.com/user-attachments/assets/a5baad45-40b7-4759-8151-e71dc1a0f669)
+![04 choose video](https://github.com/user-attachments/assets/63d03a50-b3d8-4af8-8f4f-9f577eec6697)
+
 
 
 choose the desired Audio format in the drop down menu
-![5 choose audio](https://github.com/user-attachments/assets/68c7d4a9-73ec-420b-8f4c-2536bed938c4)
+![05 choose audio](https://github.com/user-attachments/assets/6de3c1bb-486c-4167-b497-ff989e685b5f)
+
 
 
 click the Browse button to set the download location.  This will be remembered and can be changed by clicking the Settings button.
 
 click on Download Video for video and Download MP3 for music.
-![7 done](https://github.com/user-attachments/assets/f3a6dab1-ff26-4d7f-b0d1-21d7dec3fe61)
+![06 download video](https://github.com/user-attachments/assets/4dd8e801-cc29-490e-a179-7823c9a8eb8b)
+
+done downloading the video!
+![07 done](https://github.com/user-attachments/assets/8acc6333-ec25-4fe5-af8c-e10cd41ad36c)
 
 
 ### To build it:
